@@ -1,0 +1,78 @@
+Jempol Sembako (POS: Point of Sales)
+
+t_produk
+idp
+namap
+harju (json: {1:2000,10:1800,100:1500})
+harju_swed
+harbel
+harbel_swed
+swin
+isa (is active?)
+dimensi
+berat
+stok
+barcode (int/30)
+
+
+t_foto
+idf
+idp
+filex (foto/[$idp]/[$idf].jpg)
+swin
+iscover 
+idu (id user orang yang upload foto ini)
+
+
+log_harga (history perubahan harga)
+    idh
+    swin
+    idp
+    harga_awal
+    harga_baru
+    idu
+
+log_stok
+    ids
+    swin
+    idp
+    stok_awal
+    stok_baru
+    idu
+    reff (id dari pesanan)
+
+t_pesanan (penjualan)
+    idpes
+    idc (customer)
+    swin
+    tgl_bayar
+    tgl_kirim
+    nominal_pesanan
+    
+t_pesanan_detail
+    idpd
+    idp (id produk)
+    harju
+    qty (banyaknya pcs barang)
+    subtotal (hasil kali harga vs banyaknya)
+
+t_bayar
+    idbyr
+    idpes
+    jalur (cash,bank bca,bni,mandiri,bsi,bri)
+    nominal_bayar
+    swin
+    isverif
+
+
+t_belanja (barang datang)
+t_belanja_detail
+
+
+
+t_user
+t_customer
+    idc
+    namac*
+    alamatc
+    wa*
