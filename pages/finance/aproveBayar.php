@@ -15,10 +15,15 @@ if($jabatan == 'finance' || $jabatan == 'super-admin'){
         $hapusDuitMasuk = $db->query("DELETE FROM `tr_duit_masuk` WHERE `kode_bayar` = '$kode_bayar_lama'");
         $updateTransferBank = $db->query("UPDATE `$tabel` SET `id_bayar` = NULL WHERE `id_bayar` = '$bayarId'");
     }
-    $nominalBayar = $db->query("SELECT * FROM $tabel WHERE `id` = '$tr_id'")->fetch_assoc()['nominal'];
+    $nominalBayar = $db->query("SELECT * FROM $tabel WHERE `id` = '$tr_id'")->fetch_assoc()['duit_in'];
     $updateLevel = $db->query("UPDATE `pesanan` SET `level` = '3' WHERE `id` = '$idPesananBank'");
     $aproveBayar = $db->query("INSERT INTO `tr_duit_masuk`(`kode_bayar`,`user_id`, `nominal`, `bayar_id`, `created_at`) VALUES ('$kode_bayar','$userId','$nominalBayar','$bayarId',CURRENT_TIMESTAMP())");
     $updateIdBayarTr = $db->query("UPDATE `$tabel` SET `id_bayar`='$bayarId' WHERE `id` = '$tr_id'");
 }
-echo "<script>window.location.href = '/pages/finance/index.php?s=sudah'</script>";
+$page = $_POST['page'];
+if ($page == 'history') {
+    echo "<script>window.location.href = '/pages/history/'</script>";
+}else{
+    echo "<script>window.location.href = '/pages/finance/index.php?s=sudah'</script>";
+}
 ?>

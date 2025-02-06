@@ -74,7 +74,10 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                     jumlah += parseInt(data['nominal']);
                     cashIn += `<div class="w-100 border border-light p-2 my-2 customerCard d-flex justify-content-between">
                         <small class="m-0">${data['tanggal']}</small>
-                        <p class="m-0">${data['nama']}</p>
+                        <div class="">
+                            <p class="m-0">GS ${data['GS']}</p>
+                            <p class="m-0">${data['nama']}</p>
+                        </div>
                     <p class="m-0">${rupiah(data['nominal'])}</p>
                     </div>`;
                 });

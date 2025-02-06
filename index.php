@@ -7,7 +7,7 @@ include $_SERVER['DOCUMENT_ROOT'].'/components/header/index.php';?>
 <section class="container py-3">
     <h2 class="text-dark">PSP</h2>
     <div class="d-flex flex-wrap gap-4 mt-4">
-        <?php
+        <?php     
         if ($jabatan != 'super-admin') {
             $menus = $db->query("SELECT * FROM `menu` WHERE `jabatan` LIKE '%$jabatan%'");
         }else{

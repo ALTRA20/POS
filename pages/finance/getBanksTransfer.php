@@ -7,13 +7,13 @@ $tabel = 'tr_'.$bank;
 if ($bank != 'split') {
     $sql = "SELECT * FROM `$tabel` WHERE";
     if ($search != '') {
-        $sql .= " `nominal` LIKE '%$search%' OR `keterangan` LIKE '%$search%' AND";
+        $sql .= " (`duit_in` = '$search' OR `keterangan` LIKE '%$search%') AND";
     }
-    $sql .= " `split` IS NULL AND `id_bayar` IS NULL";
+    $sql .= " `split` IS NULL AND `status` != 'DB' AND `is_active` = 1 AND `id_bayar` IS NULL";
     $transferDatasDb = $db->query($sql);
     $transferDatas = [];
     foreach ($transferDatasDb as $key => $transferData) {
-        $transferData['sql'] = $sql;
+        $transferData['sql'] = $search;
         $transferDatas [] = $transferData;
     }
 }else{

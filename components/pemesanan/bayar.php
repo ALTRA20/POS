@@ -19,14 +19,20 @@ $caraBawa = isset($caraBawaRow['caraBawa']) ? $caraBawaRow['caraBawa'] : '';
 $insertBayar = $db->query("INSERT INTO `bayar`(`pesanan_id`, `jalur`, `nominal_bayar`, `caraBawa`, `created_at`, `is_verifikasi`) VALUES ('$id','$jalurBayar','$nominalBayar','$caraBawa','$tanggalBayar',1)");
 
 // Retrieve the newly inserted data
+$datasFix = [];
 $bayarResult = $db->query("SELECT * FROM `bayar` WHERE `pesanan_id` = '$id'");
-$bayarRow = $bayarResult->fetch_all();
+foreach ($bayarResult as $key => $bayar) {
+    $idBayar = $bayar['id'];
+    $nominal = $db->query("SELECT * FROM `tr_duit_masuk` WHERE `bayar_id` = '$idBayar'")->fetch_assoc()['nominal'];
+    $bayar['duit_masuk'] = $nominal;
+    $datasFix[] = $bayar;
+}
 
 // Construct response based on insertion success or failure
-if ($insertBayar && $bayarRow) {
+if ($insertBayar && $datasFix) {
     $response = [
         "message" => "success",
-        "data" => $bayarRow
+        "data" => $datasFix
     ];
 } else {
     $response = [

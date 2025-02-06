@@ -77,8 +77,12 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
 
     <div class="" id="listBayar">
         <?php 
-        $bayars = $db->query("SELECT `bayar`.*, `bayar`.created_at AS `tanggal_bayar`, `customer`.nama, `pesanan`.id AS `id_pesanan`,`tr_duit_masuk`.nominal FROM `bayar` LEFT JOIN `tr_duit_masuk` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `tr_duit_masuk`.`bayar_id` $status ORDER BY `bayar`.id DESC");
-        // echo "SELECT `bayar`.*, `bayar`.created_at AS `tanggal_bayar`, `customer`.nama, `pesanan`.id AS `id_pesanan`,`tr_duit_masuk`.nominal FROM `bayar` LEFT JOIN `tr_duit_masuk` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `tr_duit_masuk`.`bayar_id` $status ORDER BY `bayar`.id DESC";
+        $sql = "SELECT `bayar`.*, `bayar`.created_at AS `tanggal_bayar`, `customer`.nama, `pesanan`.id AS `id_pesanan`,`tr_duit_masuk`.nominal FROM `bayar` LEFT JOIN `tr_duit_masuk` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `tr_duit_masuk`.`bayar_id` $status ORDER BY `bayar`.id DESC";
+        $itemsPerPage = 5;
+        $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+        $offset = ($page - 1) * $itemsPerPage;
+        $jumlah_total = $db->query($sql)->num_rows;
+        $bayars = $db->query("$sql LIMIT $offset, $itemsPerPage");
         $backgroundColor = 'light';
         foreach ($bayars as $key => $bayar) : 
             $nama = $bayar['nama'];
@@ -99,15 +103,68 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 <div class="col-5 col-md-2 mb-2"><?=$bayar['created_at']?></div>
                 <?php if ($_GET['s'] != 'sudah') : ?>
                 <div class="col-5 col-md-1 mb-2">
-                    <?php if ($bayar['jalur'] != "Cash") : ?>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="ubahModal(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
+                    <?php if ($bayar['jalur'] == "Cash") : ?>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aproveCash" onclick="ubahModalCash(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
+                    <?php elseif ($bayar['jalur'] == "Lainnya") : ?>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLainnya">Verifikasi</button>
+                        <div class="modal fade" id="modalLainnya" tabindex="-1" aria-labelledby="modalLainnya" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header text-dark">
+                                        <h1 class="modal-title fs-5" id="modalLainnya">Pilih Metode Verifikasi</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="d-flex justify-content-center gap-3">
+                                            <button type="button" class="btn btn-success px-3" data-bs-toggle="modal" data-bs-target="#aproveCash" onclick="ubahModalLainnya(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>','Cash')">Cash</button>
+                                            <button type="button" class="btn btn-info px-3" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="ubahModalLainnya(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>','BCA')">Bank</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     <?php else : ?>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aproveCash" onclick="ubahModalCash(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="ubahModal(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
                     <?php endif ?>
                 </div>
                 <?php endif ?>
             </div>
         <?php endforeach ?>
+        <ul class="w-full d-flex justify-content-center pagination d-flex justify-content-center flex-wrap mt-5 gap-3">
+            <?php
+            $totalPages = ceil($jumlah_total / $itemsPerPage);
+            // Mendapatkan query string yang sudah ada kecuali 'page'
+            $queryString = $_GET;
+            unset($queryString['page']); // Hapus parameter page dari query string
+            $queryString = http_build_query($queryString); // Bangun ulang query string
+            
+            if ($page <= 4) {
+                $startPage = 1;
+                $endPage = min(8, $totalPages); // Jangan melebihi total halaman
+            } else {
+                $startPage = $page - 3;
+                $endPage = min($page + 4, $totalPages); // Jangan melebihi total halaman
+            }
+            if ($startPage > 1) {
+                // Tampilkan tombol "Previous" jika ada halaman tersembunyi sebelumnya
+                ?>
+                <li class="page-item"><a class="page-link" href="?<?=$queryString?>&page=<?= $startPage - 1 ?>">Previous</a></li>
+                <?php
+            }
+            for ($pageNumber = $startPage; $pageNumber <= $endPage; $pageNumber++) :
+                $isActive = ($pageNumber === $page) ? 'active' : '';
+                ?>
+                <li class="page-item <?=$isActive?>"><a class="page-link" href="?<?=$queryString?>&page=<?= $pageNumber ?>"><?=$pageNumber ?></a></li>
+                <?php
+            endfor;
+            if ($endPage < $totalPages) {
+                // Tampilkan tombol "Next" jika ada halaman tersembunyi setelahnya
+                ?>
+                <li class="page-item"><a class="page-link" href="?<?=$queryString?>&page=<?= $endPage + 1 ?>">Next</a></li>
+                <?php
+            }
+            ?>
+        </ul>
         <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <form action="aproveBayar.php" method="POST" class="modal-content text-dark">
@@ -137,9 +194,10 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             <div class="col-4 text-center">
                                 <p class="m-0">Nominal : <b><span class="m-0" id="nominal_bayarBank"></span></b></p>
                                 <input type="text" class="d-none" id="idPesananBank" name="idPesananBank">
+                                <input type="text" class="d-none" id="nominalInput" name="nominalInput">
                             </div>
                             <div class="col-4">
-                                <input type="text" class="w-100 form-control border-dark" placeholder="Cari dengan nama buyer" oninput="getBanksTransfer(this.value)">
+                                <!-- <input type="text" class="w-100 form-control border-dark" placeholder="Cari dengan nama buyer" oninput="getBanksTransfer(this.value)" disabled> -->
                             </div>
                         </div>
                         <div class="hr"></div>
@@ -186,6 +244,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                         <input type="text" class="d-none" id="userId" name="userId" value="<?=$userId?>">
                         <input type="text" class="d-none" id="idPesanan" name="idPesanan">
                         <input type="text" class="d-none" id="bayarCashId" name="bayarCashId">
+                        <input type="text" class="d-none" name="page" id="page" value="financeApprove">
                     </div>
                     <div class="modal-footer d-none" id="modal-footer-cash">
                         <button type="submit" class="btn btn-primary">Aprove</button>
@@ -217,6 +276,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         });
     }
     function getBanksTransfer(search) {
+        search = document.querySelector("#nominalInput").value;
         let bank = (document.querySelector("#bank").value != "--Banks--") ? document.querySelector("#bank").value : 'bca';
         const datas = {
             bank: bank,
@@ -235,11 +295,10 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             document.querySelector("#refresh").classList.add("d-none");
             let transferList = '';
             response.forEach(data => {
-                console.log(data);
                 let idtf = data['id'];
                 let kode_bayar = data['kode_bayar'];
                 let keterangan = data['keterangan'];
-                let nominal = data['nominal'];
+                let nominal = data['duit_in'];
                 let tanggal_transaksi = data['tanggal_transaksi'];
                 if (data['tr']) {
                     kode_bayar = data['tr']['kode_bayar'];
@@ -271,10 +330,41 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
     function ubahModal(idBayar,name,nominal,id_pesanan) {
         document.querySelector("#nama").innerHTML = name;
         document.querySelector("#nominal_bayarBank").innerHTML = rupiah(nominal);
+        document.querySelector("#nominalInput").value = nominal;
         document.querySelector("#bayarId").value = idBayar;
         document.querySelector("#idPesananBank").value = id_pesanan;
+        getBanksTransfer();
     }
 
+    function ubahJalurBayar(idBayar,jalurBayar) {
+        const datas = {
+            idBayar: idBayar,
+            jalurBayar: jalurBayar
+        };
+        fetch('ubahJalurBayar.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(datas),
+        })
+        .then(response => response.json()) // Parse the JSON response
+        .then(response => {
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+    
+    function ubahModalLainnya(idBayar,name,nominal,id_pesanan,jalurBayar) {
+        if (jalurBayar == 'Cash') {
+            ubahModalCash(idBayar,name,nominal,id_pesanan);
+        }else{
+            ubahModal(idBayar,name,nominal,id_pesanan);
+        }
+        ubahJalurBayar(idBayar,jalurBayar);
+    }
+    
     document.querySelector("#status").addEventListener('change', function() {
         window.location.href = '/pages/finance/index.php?s='+this.value;
     });

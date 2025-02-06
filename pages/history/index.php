@@ -157,7 +157,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                         </div>
                                                         <div class="col-md-1 d-flex align-items-center">
                                                             <?php 
-                                                            $bayars = $db->query("SELECT * FROM `bayar` WHERE `pesanan_id` = '$id_pesanan'");
+                                                            $bayars = $db->query("SELECT *, pesanan.id AS IDP, bayar.id AS IDB FROM `bayar`LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `pesanan_id` = '$id_pesanan'");
                                                             $qtyBayar = $bayars->num_rows;
                                                             if ($qtyBayar == 0) : ?>
                                                                 <form action="/pages/pemesanan/terimaBayar.php" class="">
@@ -203,7 +203,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                         $barangs [$key]["markup"] = $pesanan_detail['markup'];
                                                         echo "<div class='hr'></div>";
                                                         $total += ($pesanan_detail['harga_jual'] + $pesanan_detail['markup']) * $pesanan_detail['jumlah'];
-                                                        #echo $total;
+                                                        // echo $total;
                                                         ?>
                                                         <div class="row p-4 mx-0">
                                                             <div class="col-1">
@@ -213,7 +213,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                                 <?php
                                                                 $produkId = $pesanan_detail['produkId'];
                                                                 
-                                                                    $foto = $db->query("SELECT `id` FROM `foto` WHERE id_produk = '$produkId' AND is_active = 1 AND is_cover = 1")->fetch_assoc()['id'];
+                                                                $foto = $db->query("SELECT `id` FROM `foto` WHERE id_produk = '$produkId' AND is_active = 1 AND is_cover = 1")->fetch_assoc()['id'];
                                                                 
                                                                 ?>
                                                                 <img src="<?= ($pesanan_detail['komentar']) ? ($pesanan_detail['foto'] ? '/public/foto/temp/'.$pesanan_detail['foto'] : '/public/foto/md/custom.jpg') : ($foto ? '/public/foto/md/'.$foto.'.jpg' : '/public/404.png') ?>" alt="" class="rounded-circle" style="width:70px; height:70px;">
@@ -258,6 +258,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                         </div>
                                                         <?php endforeach ?>
                                                         <div class="text-end">
+                                                            <input type="text" class="form-control" id="jumlahYangHarusDibayar<?=$pesanan['id']?>" value="<?=$total?>">
                                                             <h3 class=""><?=format_rupiah($total)?></h3>
                                                         </div>
                                                     </div>
@@ -271,26 +272,44 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                             <div class="col-2 col-md-3 d-none">Jalur</div>
                                                             <div class="col-5 col-md-3 d-none">Nominal Bayar</div>
                                                             <div class="col-5 col-md-3 d-none">Tanggal</div>
-                                                            <div class="" id="listBayar">
+                                                            <div class="" id="listBayar<?=$pesanan['id']?>">
                                                                 <?php
                                                                 $nominalBayar = 0;
+                                                                // var_dump("SELECT `nominal` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
+
                                                                 $nominals = $db->query("SELECT `nominal` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
                                                                 foreach ($nominals as $key => $nominal) {
                                                                     $nominalBayar += intval($nominal['nominal']);
                                                                 }
+                                                                
                                                                 foreach ($bayars as $key => $bayar) :
-                                                                    $idBayar = $bayar['id'];
+                                                                    // var_dump($bayar);
+                                                                    $idBayar = $bayar['IDB'];
+                                                                    $nama = $bayar['nama'];
+                                                                    $nominal_bayar = $bayar['nominal_bayar'];
+                                                                    $nominal = $bayar['nominal'];
                                                                     $nominal = $db->query("SELECT * FROM `tr_duit_masuk` WHERE `bayar_id` = '$idBayar'")->fetch_assoc()['nominal'];
                                                                     // Convert the string to a DateTime object
                                                                     $date = new DateTime($bayar['created_at']);
 
                                                                 ?>
-
+                                                                
                                                                     <div class="row alert <?=($nominal) ? 'bg-success text-light' : 'alert-danger text-danger'?> m-0 mb-3">
-                                                                        <div class="col-4 col-md-3 mb-2">Bayar ke <?=$key + 1?></div>
-                                                                        <div class="col-5 col-md-3 mb-2"><?=$date->format('Y-M-d')?></div>
+                                                                        <div class="col-4 col-md-2 mb-2">Bayar ke <?=$key + 1?></div>
+                                                                        <div class="col-5 col-md-2 mb-2"><?=$date->format('Y-M-d')?></div>
                                                                         <div class="col-2 col-md-3 mb-2"><?=$bayar['jalur']?></div>
-                                                                        <div class="col-5 col-md-3 mb-2"><?=($nominal) ? $nominal : $bayar['nominal_bayar']?></div>
+                                                                        <div class="col-3 col-md-3 mb-2"><?=($nominal) ? $nominal : $bayar['nominal_bayar']?></div>
+                                                                        <div class="col-2 col-md-2">
+                                                                            <?php if ($jabatan == "super-admin" || $jabatan == "finance") : ?>
+                                                                                <?php if (!$nominal) : ?>
+                                                                                    <?php if ($bayar['jalur'] != "Cash") : ?>
+                                                                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verifikasiTransfer" onclick="ubahModal(<?=$idBayar?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
+                                                                                    <?php else : ?>
+                                                                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aproveCash" onclick="ubahModalCash(<?=$idBayar?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
+                                                                                    <?php endif ?>
+                                                                                <?php endif ?>
+                                                                            <?php endif ?>
+                                                                        </div>
                                                                     </div>
                                                                 <?php endforeach ?>
                                                             </div>
@@ -309,9 +328,6 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                                     <option value="" selected>--- Jalur Bayar ---</option>
                                                                     <option value="Cash">Cash</option>
                                                                     <option value="BCA">BCA</option>
-                                                                    <option value="BRI">BRI</option>
-                                                                    <option value="BNI">BNI</option>
-                                                                    <option value="MANDIRI">MANDIRI</option>
                                                                     <option value="SPLIT">SPLIT</option>
                                                                     <option value="Lainnya">Lainnya</option>
                                                                 </select>    
@@ -338,6 +354,87 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="modal" id="verifikasiTransfer" tabindex="-1" aria-labelledby="verifikasiTransferLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <form action="/pages/finance/aproveBayar.php" method="POST" class="modal-content text-dark">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="verifikasiTransferLabel">Aprove <span class="m-0" id="nama"></span></h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row mt-3 px-3">
+                                                <div class="col-md-12">
+                                                    <input type="text" class="d-none" name="edit" value="<?=($status == 'IS NOT NULL') ? '1' : '0'?>">
+                                                    <input type="text" class="d-none" name="userId" value="<?=$userId?>">
+                                                    <input type="text" class="d-none" name="tr_id" id="tr_id">
+                                                    <input type="text" class="d-none" name="kode_bayar" id="kode_bayar">
+                                                    <input type="text" class="d-none" name="bayarId" id="bayarId">
+                                                    <input type="text" class="d-none" name="page" id="page" value="history">
+                                                </div>
+                                                <div class="col-4">
+                                                    <select class="form-select" aria-label="Default select example" name="bank" id="bank" onclick="getBanksTransfer()" onchange="getBanksTransfer()">
+                                                        <option value="bca">BCA</option>
+                                                        <option value="split">SPLIT</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-4 text-center">
+                                                    <p class="m-0">Nominal : <b><span class="m-0" id="nominal_bayarBank"></span></b></p>
+                                                    <input type="text" class="d-none" id="idPesananBank" name="idPesananBank">
+                                                </div>
+                                                <div class="col-4">
+                                                    <input type="text" class="w-100 form-control border-dark" placeholder="Cari dengan nama buyer" oninput="getBanksTransfer(this.value)">
+                                                </div>
+                                            </div>
+                                            <div class="hr"></div>
+                                            <div class="row mx-3 rounded">
+                                                <div class="col-1 d-flex justify-content-center align-items-center">Kode Bayar</div>
+                                                <div class="col-7 d-flex justify-content-center align-items-center">Keterangan</div>
+                                                <div class="col-2 d-flex justify-content-center align-items-center">Nominal</div>
+                                                <div class="col-2 d-flex justify-content-center align-items-center">Tanggal Transaksi</div>
+                                            </div>
+                                            <div class="w-100 d-flex justify-content-end px-3" id="refresh" onclick="getBanksTransfer()">
+                                                <div class="d-flex gap-2 my-3 alert alert-danger p-2 pointer">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                                                        <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"/>
+                                                        <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"/>
+                                                    </svg>
+                                                    <p class="m-0">Refresh</p>
+                                                </div>
+                                            </div>
+                                            <div class="px-4" id="transferList">
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer d-none" id="modal-footer-bank">
+                                            <button type="submit" class="btn btn-primary">Aprove</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal fade" id="aproveCash" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <form action="aproveCash.php" method="POST" class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="exampleModalLabel">Aprove <span class="m-0" id="namaCash"></span></h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <b class="">Nominal yang harus dibayar : </b>
+                                                <span class="m-0" id="nominal_bayar"></span>
+                                            </div>
+                                            <label for="nominal">Nominal</label>
+                                            <input type="text" class="form-control border-dark" id="nominal" oninput="cashCheck(this.value)" onfocus="use_number(this); this.select()" onblur="use_text(this)" name="nominal" autocomplete="off">
+                                            <input type="text" class="d-none" id="userId" name="userId" value="<?=$userId?>">
+                                            <input type="text" class="d-none" id="idPesanan" name="idPesanan">
+                                            <input type="text" class="d-none" id="bayarCashId" name="bayarCashId">
+                                        </div>
+                                        <div class="modal-footer d-none" id="modal-footer-cash">
+                                            <button type="submit" class="btn btn-primary">Aprove</button>
+                                        </div>
+                                    </form> 
                                 </div>
                             </div>
                             <div class="mx-2">
@@ -438,7 +535,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             if ($total - $nominalBayar > 0) : ?>
                                 <p class="m-0"><span class="text-danger">Kurang </span><?=format_rupiah($total - $nominalBayar)?></p>
                             <?php elseif($total - $nominalBayar < 0): ?>
-                                <p class="m-0"><span class="text-success">Bonus </span><?=format_rupiah($nominalBayar - $total)?></p>
+                                <p class="m-0"><span class="text-success">Lebihan </span><?=format_rupiah($nominalBayar - $total)?></p>
                             <?php endif ?>
                         </div>
                         <div class="col-md-5 d-flex flex-wrap">
@@ -456,7 +553,15 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                     ?>
                                         <img src="/public/foto/md/<?= htmlspecialchars($foto_data['id']) ?>.jpg" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
                                     <?php else: ?>
-                                        <img src="/public/404.png" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
+                                        <?php 
+                                        $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$id_produk' ORDER BY `id` DESC LIMIT 1")->fetch_assoc()['id']; 
+                                        if ($foto) {
+                                            $foto = "/public/foto/md/$foto.jpg";
+                                        }else{
+                                            $foto = "/public/404.png";
+                                        }
+                                        ?>
+                                        <img src="<?=$foto?>" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <img src="<?=($barang['foto']) ? '/public/foto/temp/'.$barang['foto'] : '/public/foto/md/custom.jpg'?>" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
@@ -529,6 +634,77 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
     </section>
 </div>
 <script>
+    function choose(elementchoose,idtf,kodeBayar) {
+        document.querySelector("#tr_id").value = idtf;
+        document.querySelector("#kode_bayar").value = kodeBayar;
+
+        document.querySelectorAll("#transfer").forEach(element => {
+            if(element != elementchoose){
+                element.remove();
+            }
+            document.querySelector("#refresh").classList.remove("d-none");
+            document.querySelector("#modal-footer-bank").classList.remove("d-none");
+        });
+    }
+
+    function getBanksTransfer(search) {
+        let bank = (document.querySelector("#bank").value != "--Banks--") ? document.querySelector("#bank").value : 'bca';
+        const datas = {               
+            bank: bank,
+            search: search
+        };
+        fetch('/pages/finance/getBanksTransfer.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(datas),
+        })
+        .then(response => response.json()) // Parse the JSON response
+        .then(response => {
+            document.querySelector("#transferList").innerHTML = '';
+            document.querySelector("#refresh").classList.add("d-none");
+            let transferList = '';
+            response.forEach(data => {
+                let idtf = data['id'];
+                let kode_bayar = data['kode_bayar'];
+                let keterangan = data['keterangan'];
+                let nominal = (bank == 'split') ? data['nominal'] : data['duit_in'];
+                let tanggal_transaksi = data['tanggal_transaksi'];
+                if (data['tr']) {
+                    kode_bayar = data['tr']['kode_bayar'];
+                    keterangan = data['tr']['keterangan'];
+                    tanggal_transaksi = data['tr']['tanggal_transaksi'];
+                }
+                transferList += `<div class="row customerCard border border-dark p-3 rounded my-3" id="transfer" onclick="choose(this,'${idtf}','${kode_bayar}')" style="background:#accfa4;">
+                                <div class="col-1 d-flex align-items-center">${kode_bayar}</div>
+                                <div class="col-7 d-flex align-items-center">${keterangan}</div>
+                                <div class="col-2 d-flex align-items-center">${nominal}</div>
+                                <div class="col-2 d-flex align-items-center">${tanggal_transaksi}</div>
+                            </div>`;
+            });
+            document.querySelector("#transferList").innerHTML = transferList;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+    getBanksTransfer();
+
+    function ubahModalCash(idBayar,name,nominal,id_pesanan) {
+        document.querySelector("#namaCash").innerHTML = name;
+        document.querySelector("#nominal_bayar").innerHTML = rupiah(nominal);
+        document.querySelector("#bayarCashId").value = idBayar;
+        document.querySelector("#idPesanan").value = id_pesanan;
+    }
+
+    function ubahModal(idBayar,name,nominal,id_pesanan) {
+        document.querySelector("#nama").innerHTML = name;
+        document.querySelector("#nominal_bayarBank").innerHTML = rupiah(nominal);
+        document.querySelector("#bayarId").value = idBayar;
+        document.querySelector("#idPesananBank").value = id_pesanan;
+    }
+    
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll("#img-produk").forEach(element => {
             let toolTipText = element.getAttribute("alt");
@@ -610,17 +786,21 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
     }
     function cekInput(id) {
         let jumlah = 0;
-        
         if (document.querySelector("#tanggalBayar"+id).value != '') {
             jumlah += 1;
         }
-
+        
         if (document.querySelector("#jalurBayar"+id).value != '') {
             jumlah += 1;
         }
-
+        
         if (document.querySelector("#nominalBayar"+id).value != '') {
-            jumlah += 1;
+            let jumlahYangHarusDibayar = document.querySelector("#jumlahYangHarusDibayar"+id).value;
+            if (parseInt(jumlahYangHarusDibayar) > parseInt(document.querySelector("#nominalBayar"+id).value)) {
+                document.querySelector("#jumlahYangHarusDibayar"+id).value = '';
+            }else{
+                jumlah += 1;
+            }
         }
 
         if (jumlah == 3) {
@@ -667,38 +847,40 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             tanggalBayar: tanggalBayar,
             nominalBayar: nominalBayar
         };
-            fetch('/components/pemesanan/bayar.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(datas),
-            })
-            .then(response => response.json()) // Parse the JSON response
-            .then(response => {
-                console.log(response);
-                if (response.message === "success") {
-                    const datas = response.data; // Access the 'data' object
-                    let listBayar = '';
-                    Object.entries(datas).forEach(([key, value]) => {
-                        let bayarKe = parseInt(key, 10)+1;
-                        listBayar += `<div class="row alert alert-danger text-danger m-0 mb-3">
-                                        <div class="col-4 col-md-3 mb-2">Bayar ke ${bayarKe}</div>
-                                        <div class="col-2 col-md-3 mb-2">${value[2]}</div>
-                                        <div class="col-5 col-md-3 mb-2">${value[3]}</div>
-                                        <div class="col-5 col-md-3 mb-2">${value[5]}</div>
-                                    </div>`;
-                        // console.log();
-                    });
-                    document.querySelector("#listBayar").innerHTML = listBayar;
-                    // Now you can use 'data' object as needed in your JavaScript code
-                } else {
-                    console.error("Insertion failed or no data returned.");
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+        fetch('/components/pemesanan/bayar.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(datas),
+        })
+        .then(response => response.json()) // Parse the JSON response
+        .then(response => {
+            if (response.message === "success") {
+                const datas = response.data; // Access the 'data' object
+                let listBayar = '';
+                Object.entries(datas).forEach(([key, value]) => {
+                    console.log(value);
+                    let duit_masuk = value['duit_masuk'];
+                    let bg = (duit_masuk) ? 'bg-success text-light' : 'alert-danger text-danger'
+                    let bayarKe = parseInt(key, 10)+1;
+                    listBayar += `<div class="row alert ${bg} m-0 mb-3">
+                                    <div class="col-4 col-md-3 mb-2">Bayar ke ${bayarKe}</div>  
+                                    <div class="col-2 col-md-3 mb-2">${value['created_at']}</div>
+                                    <div class="col-5 col-md-3 mb-2">${value['jalur']}</div>
+                                    <div class="col-5 col-md-3 mb-2">${value['nominal_bayar']}</div>
+                                </div>`;
+                    // console.log();
+                });
+                document.querySelector("#listBayar"+id).innerHTML = listBayar;
+                // Now you can use 'data' object as needed in your JavaScript code
+            } else {
+                console.error("Insertion failed or no data returned.");
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
     }
 </script>
 <?php include $_SERVER['DOCUMENT_ROOT'].'/components/footer/index.php';?>

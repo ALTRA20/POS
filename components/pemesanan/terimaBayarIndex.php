@@ -136,7 +136,7 @@ if (isset($_GET['i'])) {
         <div class="col-md-4 h-100 py-5">
             <form action="/components/pemesanan/qr.php" method="post" class="w-100 h-100 border border-dark text-dark px-3" style="width:360px;">
                 <div class="row my-3">
-                    <div class="btn btn-primary" onclick="completeIsi()">Quick Cash</div>
+                    <div class="btn btn-primary" onclick="completeIsi()">Quick Pay</div>
                     <input type="number" id="isQuick" class="form-control border border-dark d-none" name="isQuick" value="0">
                 </div>
 
@@ -147,10 +147,6 @@ if (isset($_GET['i'])) {
                             <option value="" selected>--- Jalur Bayar ---</option>
                             <option value="Cash">Cash</option>
                             <option value="BCA">BCA</option>
-                            <option value="BRI">BRI</option>
-                            <option value="BNI">BNI</option>
-                            <option value="MANDIRI">MANDIRI</option>
-                            <option value="BSI">BSI</option>
                             <option value="Lainnya">Lainnya</option>
                         </select>
                     </div>
@@ -201,7 +197,7 @@ if (isset($_GET['i'])) {
         document.querySelector("#bayar").value = document.querySelector("#totalHarga").innerHTML.replace(/Rp/g, "").replace(/\./g, "");
         document.querySelector("#kurangBayar").innerHTML = 0;
         document.querySelector("#tanggalBayar").value = dateNow();
-        document.querySelector("#jalurBayar").options[1].selected = true;
+        document.querySelector("#jalurBayar").options[3].selected = true;
         document.querySelector("#caraBawa").options[1].selected = true;
         document.querySelector("#btn-kirim").classList.remove("d-none");
         document.querySelector("#isQuick").value = 1;
