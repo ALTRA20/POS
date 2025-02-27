@@ -196,42 +196,46 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
 
             const result = await response.json();
             console.log(result);
-            let card = '';
-            result.datas.forEach((data,index) => {
-                let status = data['status'];
-                let upload = data['upload'];
-                let bg = (status == 'berhasil') ? 'bg-success' : ((status == 'duplicate') ? 'bg-orange' : 'bg-danger');
-                let tanggal_transaksi = data['tanggal'];
-                let Keterangan = data[1];
-                let nominal = data[3];
-                let btn = (upload) ? `<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#insertManual${index}">insert manual</button>` : '';
-                card += `<div class="row border-bottom ${bg}" id="cardStatus${index}">
-                    <div class="col-2 p-4">${tanggal_transaksi}</div>
-                    <div class="col-2 p-4">${rupiah(nominal)}</div>
-                    <div class="col-5 p-4">${Keterangan}</div>
-                    <div class="col-1 p-4" id="cardStatusStatus${index}">${status}</div>
-                    <div class="col-2 d-flex justify-content-center p-4" id="cardStatusBtns${index}">${btn}</div>
-                </div>`;
-                card += `<div class="modal fade" id="insertManual${index}" tabindex="-1" aria-labelledby="insertManual${index}Label" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content text-dark">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="insertManual${index}Label">Alasan menginsert manual</h1>
-                                <button type="button" class="btn-close" id="close-btn-insert-manual${index}" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <textarea rows="7" class="w-100 form-control bg-orange" id="alasan${index}" placeholder="alasannya ......"></textarea>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-success" onclick="uploadLagi('${Keterangan}', '${nominal}', '${tanggal_transaksi}', '${index}', '<?=$userId?>')">Insert</button>
+            if (result.status == "success") {
+                let card = '';
+                result.datas.forEach((data,index) => {
+                    let status = data['status'];
+                    let upload = data['upload'];
+                    let bg = (status == 'berhasil') ? 'bg-success' : ((status == 'duplicate') ? 'bg-orange' : 'bg-danger');
+                    let tanggal_transaksi = data['tanggal'];
+                    let Keterangan = data[1];
+                    let nominal = data[3];
+                    let btn = (upload) ? `<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#insertManual${index}">insert manual</button>` : '';
+                    card += `<div class="row border-bottom ${bg}" id="cardStatus${index}">
+                        <div class="col-2 p-4">${tanggal_transaksi}</div>
+                        <div class="col-2 p-4">${rupiah(nominal)}</div>
+                        <div class="col-5 p-4">${Keterangan}</div>
+                        <div class="col-1 p-4" id="cardStatusStatus${index}">${status}</div>
+                        <div class="col-2 d-flex justify-content-center p-4" id="cardStatusBtns${index}">${btn}</div>
+                    </div>`;
+                    card += `<div class="modal fade" id="insertManual${index}" tabindex="-1" aria-labelledby="insertManual${index}Label" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content text-dark">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="insertManual${index}Label">Alasan menginsert manual</h1>
+                                    <button type="button" class="btn-close" id="close-btn-insert-manual${index}" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <textarea rows="7" class="w-100 form-control bg-orange" id="alasan${index}" placeholder="alasannya ......"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-success" onclick="uploadLagi('${Keterangan}', '${nominal}', '${tanggal_transaksi}', '${index}', '<?=$userId?>')">Insert</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('result').innerHTML = card;
-            getMutasi(document.querySelector("#banks").value);
-            document.querySelector("#closeUploadMutasi").click();
+                    </div>`;
+                });
+                document.getElementById('result').innerHTML = card;
+                getMutasi(document.querySelector("#banks").value);
+                document.querySelector("#closeUploadMutasi").click();
+            }else{  
+                alert(result.message);
+            }
         } catch (error) {
             console.error('Error:', error);
             document.getElementById('response').innerText = 'An error occurred!';

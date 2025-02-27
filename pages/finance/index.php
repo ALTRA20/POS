@@ -52,18 +52,28 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 } else {
                     echo "Gagal menyimpan data: " . $stmt->error . "\n";
                 }
-                $stmt->close();
+                $stmt->close(); 
             }
         }   
     }
     ?>
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h2 class="">Finance Aproval</h2>
-        <select class="w-fit form-select" id="status" aria-label="Default select example">
-            <option selected>--- Status ---</option>
-            <option value="sudah">Sudah Disetujui</option>
-            <option value="belum">Belum Disetujui</option>
-        </select>
+    <div class="row align-items-center justify-content-between mb-4">
+        <div class="col-3">
+            <h2 class="">Finance Aproval</h2>
+        </div>
+        <form action="" class="col-6 d-flex gap-2">
+            <?php $page = isset($_GET['page']) ? intval($_GET['page']) : 1; ?>
+            <input type="text" class="w-full form-control bg-light text-center" id="search" name="search" value="<?=($_GET['search']) ? $_GET['search'] : ''?>" autocomplete="off">
+            <button class="d-none tn btn-danger" id="btn-cari">cari</button>
+            <a href="/pages/finance/" class="btn btn-danger">Reset</a>
+        </form>
+        <div class="col-3 d-flex justify-content-end">
+            <select class="w-fit form-select" id="status" aria-label="Default select example">
+                <option>--- Status ---</option>
+                <option value="sudah" <?= ($_GET['s'] == 'sudah') ? "selected" : ""?>>Sudah Disetujui</option>
+                <option value="belum" <?= ($_GET['s'] == 'sudah') ? "" : "selected"?>>Belum Disetujui</option>
+            </select>
+        </div>
     </div>
     <div class="row">
         <div class="col-2 col-md-5">Pesanan</div>
@@ -77,41 +87,57 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
 
     <div class="" id="listBayar">
         <?php 
-        $sql = "SELECT `bayar`.*, `bayar`.created_at AS `tanggal_bayar`, `customer`.nama, `pesanan`.id AS `id_pesanan`,`tr_duit_masuk`.nominal FROM `bayar` LEFT JOIN `tr_duit_masuk` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `tr_duit_masuk`.`bayar_id` $status ORDER BY `bayar`.id DESC";
+        $search = $_GET['search'];
+        $sql = "SELECT `bayar`.*, `bayar`.created_at AS `tanggal_bayar`, `customer`.nama, `pesanan`.id AS `id_pesanan`,`tr_duit_masuk`.nominal FROM `bayar` LEFT JOIN `tr_duit_masuk` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` LEFT JOIN `pesanan` ON `bayar`.`pesanan_id` = `pesanan`.id LEFT JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `pesanan`.id LIKE '%$search%' AND `tr_duit_masuk`.`bayar_id` $status ORDER BY `bayar`.id DESC";
         $itemsPerPage = 5;
-        $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
         $offset = ($page - 1) * $itemsPerPage;
         $jumlah_total = $db->query($sql)->num_rows;
         $bayars = $db->query("$sql LIMIT $offset, $itemsPerPage");
         $backgroundColor = 'light';
         foreach ($bayars as $key => $bayar) : 
+            $idBayar = $bayar['id'];
             $nama = $bayar['nama'];
             $nominal_bayar = $bayar['nominal_bayar'];
             $id_pesanan = $bayar['id_pesanan'];
             $nominal = $bayar['nominal'];
+            $sudahBayar = 0;
             if (intval($nominal) > intval($nominal_bayar)) {
                 $nominal = $nominal_bayar;
+            }
+            if ($_GET['s'] == 'sudah') {
+                $sudahBayar = $db->query("SELECT * FROM `tr_duit_masuk` WHERE `bayar_id` = '$idBayar'")->fetch_assoc()['nominal'];
             }
         ?>
                 <div class="row alert alert-<?=$background?> m-0 mb-3">
                 <div class="col-2 col-md-5 mb-2">
-                    <p class="m-0">GS <?=$bayar['id_pesanan']?></p>
+                    <a href="/pages/history/?gs=<?=$bayar['id_pesanan']?>" target="_blank" class="btn btn-success fw-bold m-0">GS <?=$bayar['id_pesanan']?></a>
                     <p class="m-0"><?=$bayar['nama']?></p>
                 </div>
                 <div class="col-2 col-md-2 mb-2"><?=$bayar['jalur']?></div>
-                <div class="col-5 col-md-2 mb-2"><?=($_GET['s'] != 'sudah') ? rupiah($nominal_bayar) : rupiah($nominal)?></div>
+                <div class="col-5 col-md-2 mb-2">
+                    <p class="m-0"><?=($_GET['s'] != 'sudah') ? rupiah($nominal_bayar) : rupiah($nominal)?></p>
+                    <?php 
+                        if (($_GET['s'] == 'sudah')) : 
+                        $selisih = $sudahBayar - $nominal;
+                    ?>
+                        <?php if ($selisih !== 0) : ?>
+                        <p class="m-0">Bayar Asli <?=rupiah($sudahBayar)?></p>
+                        <p class="m-0">Selisih <?=rupiah($selisih)?></p>
+                        <?php endif ?>
+                    <?php endif ?>
+                </div>
                 <div class="col-5 col-md-2 mb-2"><?=$bayar['created_at']?></div>
                 <?php if ($_GET['s'] != 'sudah') : ?>
                 <div class="col-5 col-md-1 mb-2">
                     <?php if ($bayar['jalur'] == "Cash") : ?>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aproveCash" onclick="ubahModalCash(<?=$bayar['id']?>,'<?=$nama?>','<?=$nominal_bayar?>','<?=$id_pesanan?>')">Verifikasi</button>
                     <?php elseif ($bayar['jalur'] == "Lainnya") : ?>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLainnya">Verifikasi</button>
-                        <div class="modal fade" id="modalLainnya" tabindex="-1" aria-labelledby="modalLainnya" aria-hidden="true">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLainnya<?=$idBayar?>">Verifikasi</button>
+                        <div class="modal fade" id="modalLainnya<?=$idBayar?>" tabindex="-1" aria-labelledby="modalLainnya<?=$idBayar?>" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header text-dark">
-                                        <h1 class="modal-title fs-5" id="modalLainnya">Pilih Metode Verifikasi</h1>
+                                        <h1 class="modal-title fs-5" id="modalLainnya<?=$idBayar?>">Pilih Metode Verifikasi</h1>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
@@ -222,7 +248,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                     </div>
                     <div class="modal-footer d-none" id="modal-footer-bank">
                         <button type="submit" class="btn btn-primary">Aprove</button>
-                    </div>
+                    </div>      
                 </form>
             </div>
         </div> 
@@ -255,6 +281,17 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
     </div>
 </section>
 <script>
+    document.querySelector("#search").addEventListener("keypress", function(event) {
+        // If the user presses the "Enter" key on the keyboard
+        if (event.key === "Enter") {
+            // Cancel the default action, if needed
+            event.preventDefault();
+            // Trigger the button element with a click
+            document.getElementById("btn-cari").click();
+        }
+    });
+
+
     function cashCheck(jumlah) {
         if (jumlah) {
             document.querySelector("#modal-footer-cash").classList.remove("d-none");
@@ -275,6 +312,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             document.querySelector("#modal-footer-bank").classList.remove("d-none");
         });
     }
+
     function getBanksTransfer(search) {
         search = document.querySelector("#nominalInput").value;
         let bank = (document.querySelector("#bank").value != "--Banks--") ? document.querySelector("#bank").value : 'bca';
@@ -298,7 +336,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 let idtf = data['id'];
                 let kode_bayar = data['kode_bayar'];
                 let keterangan = data['keterangan'];
-                let nominal = data['duit_in'];
+                let nominal = (data['duit_in']) ? data['duit_in'] : data['nominal'];
                 let tanggal_transaksi = data['tanggal_transaksi'];
                 if (data['tr']) {
                     kode_bayar = data['tr']['kode_bayar'];

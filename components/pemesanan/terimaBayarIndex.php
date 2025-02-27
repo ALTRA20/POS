@@ -14,7 +14,7 @@ if (isset($_GET['i'])) {
     });
 </script>
 
-<section class="d-flex flex-column justify-content-center p-md-5">
+<sectio0n class="d-flex flex-column justify-content-center p-md-5">
     <?php
     $pesanans = $db->query("SELECT `pesanan`.*,`customer`.`nama`,`customer`.`alamat`,`customer`.`wa` FROM `pesanan` JOIN `customer` ON `customer`.`id` = `pesanan`.`customer_id` WHERE `pesanan`.`id` = '$id_pesanan'");
     foreach ($pesanans as $key => $pesanan) :
@@ -154,9 +154,9 @@ if (isset($_GET['i'])) {
 
 
                 <div class="row my-3">
-                    <div class="col-4 d-flex justify-content-end">Nominal Bayar 1:</div>
+                    <div class="col-4 d-flex justify-content-end">Nominal Bayar:</div>
                     <div class="col-8">
-                        <input type="number" id="bayar" class="form-control bg-light border border-dark" oninput="cekButtonKirim()" name="nominalBayar">
+                        <input type="number" id="bayar" class="form-control bg-light border border-dark" min="0" oninput="cekButtonKirim()" name="nominalBayar">
                     </div>
                 </div>
                 <div class="row my-3">
@@ -188,9 +188,8 @@ if (isset($_GET['i'])) {
             </form>
         </div>
     </div>
-        
     <?php endforeach ?>
-</section>
+</sectio0n>
 <script>
     function completeIsi() {
         let hargaTotal = document.querySelector("#totalHarga").innerHTML;

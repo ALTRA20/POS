@@ -24,11 +24,16 @@ if (isset($_SESSION['userId'])) {
             width: 100px; /* Atur lebar gambar */
             margin: 5px;
         }
+        canvas { 
+            border: 1px solid black; 
+            cursor: crosshair; 
+            margin: auto;
+        }
     </style>
 </head>
 <body>
     <?php include $_SERVER['DOCUMENT_ROOT'].'/components/header/navbar2.php'; ?>
-    <div class="p-5">
+    <div class="container p-5" style="width:90%;">
         <?php
         include $_SERVER['DOCUMENT_ROOT'].'/function/db.php';
         $produk = $db->query("SELECT *  FROM `produk` WHERE `id` = '$id'")->fetch_assoc();
@@ -44,7 +49,7 @@ if (isset($_SESSION['userId'])) {
                         <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
                     </svg>
                 </a>
-                <h1 class="m-0">Upload Foto Dan Video <span class="text-success"><?=$nama?></span></h1>
+                <h1 class="m-0">Upload Foto Dan Video <span id="namaEdit<?=$id?>" class="text-success"><?=$nama?></span></h1>
             </div>
             <input type="range" class="w-fit form-control border border-dark" id="controlWidth" oninput="controlWidth('potoAwal',this)" onchange="controlWidth('potoAwal',this)" style="width:fit-content; height:fit-content;" value="200" min="200" max="300">
         </div>
@@ -53,11 +58,18 @@ if (isset($_SESSION['userId'])) {
             <?php if ($fotos->num_rows > 0) : ?>
             <div class="col-7 d-flex align-items-center flex-wrap gap-5 mb-5">
                 <?php foreach ($fotos as $key => $foto) : ?>
-                    <?php if($foto['is_video'] == 1) : ?>
+                    <?php 
+                    $is_cover = $foto['is_cover'];
+                    if($foto['is_video'] == 1) :
+                    ?>
                     <video controls style="width:200px; height:200px;">
                         <source src="/public/foto/lg/<?=$foto['id']?>.mp4" type="video/mp4">
                     </video>
                     <?php else : ?>
+                        <?php 
+                        $idGambar = $foto['id'];
+                        $is_cover = $foto['is_cover'];
+                        ?>
                         <div class="position-relative">
                             <div class="position-absolute z-100 bg-success text-light rounded-circle pointer" style="top:-10px; right:-10px; cursor:pointer;" onclick="deletePoto(<?=$foto['id']?>)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
@@ -65,6 +77,11 @@ if (isset($_SESSION['userId'])) {
                                 </svg>
                             </div>
                             <img src="/public/foto/lg/<?=$foto['id']?>.jpg" alt="" id="potoAwal" class="" style="width:200px;">
+                            <div class="position-absolute w-fit p-1 bg-warning pointer" onclick="isFavorite(<?=$idGambar?>,<?=$id?>)" style="bottom:0px; right:0px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-heart-fill <?=($is_cover == 1) ? 'text-danger' : ''?>" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314"/>
+                                </svg>
+                            </div>
                         </div>
                     <?php endif ?>
                 <?php endforeach; ?>
@@ -74,14 +91,6 @@ if (isset($_SESSION['userId'])) {
                 <h5 class="">Tidak ada foto atau video produk</h5>
             </div>
             <?php endif; ?>
-            <form action="/pages/produk/ubahDeskripsi.php" method="POST" class="col-5">
-                <h5 class="">Talking Point</h5>
-                <input type="text" class="d-none" value="<?=$_GET['id'] ?>" name="id">
-                <textarea name="deskripsi" id="" cols="" rows="10" class="form-control border-dark"><?=$deskripsi?></textarea>
-                <div class="d-flex justify-content-end mt-3" style="width:100%">
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>
-            </form>
         </div>
         <div class="">
             <div class="d-flex justify-content-between">
@@ -99,10 +108,133 @@ if (isset($_SESSION['userId'])) {
                     <button type="submit" class="btn btn-primary">Upload</button>
                 </div>
             </form>
+            <div class="position-absolute d-flex flex-column justify-content-center align-items-center bg-danger top-0 start-0 end-0 bottom-0 d-none" id="canvasOverlay" style="z-index:1021;">
+                <canvas id="drawingCanvas" width="1200" height="1200" class="border border-dark"></canvas>
+                <button class="btn btn-success mb-5" id="saveBtn">Save as Image</button>
+            </div>
+
+            <script>
+                const canvas = document.getElementById('drawingCanvas');
+                const ctx = canvas.getContext('2d');
+                let drawing = false;
+
+                function resizeCanvas(width, height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                }
+
+                document.addEventListener('paste', (event) => {
+                    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+                    for (const item of items) {
+                        if (item.type.indexOf('image') !== -1) {
+                            const blob = item.getAsFile();
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.getElementById('drawingCanvas');
+                                    const ctx = canvas.getContext('2d');
+
+                                    // Fix ukuran canvas
+                                    const fixedWidth = 600;
+                                    const fixedHeight = 600;
+                                    canvas.width = fixedWidth;
+                                    canvas.height = fixedHeight;
+
+                                    // Resize gambar agar fit ke canvas
+                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                    ctx.drawImage(img, 0, 0, fixedWidth, fixedHeight);
+                                };
+                                img.src = e.target.result;
+                                document.querySelector("#canvasOverlay").classList.remove("d-none");
+                            };
+                            reader.readAsDataURL(blob);
+                        }
+                    }
+                });
+
+
+                canvas.addEventListener('mousedown', (event) => {
+                    drawing = true;
+                    ctx.beginPath();
+                    ctx.moveTo(event.offsetX, event.offsetY);
+                });
+
+                canvas.addEventListener('mousemove', (event) => {
+                    if (!drawing) return;
+                    ctx.lineTo(event.offsetX, event.offsetY);
+                    ctx.lineWidth = 10;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = 'red';
+                    ctx.stroke();
+                });
+
+                canvas.addEventListener('mouseup', () => {
+                    drawing = false;
+                });
+
+                canvas.addEventListener('mouseleave', () => {
+                    drawing = false;
+                });
+
+                document.getElementById('saveBtn').addEventListener('click', () => {
+                    const canvas = document.getElementById('drawingCanvas');
+                    canvas.toBlob((blob) => {
+                        const formData = new FormData(document.getElementById('uploadForm'));
+
+                        // Tambahkan gambar dari canvas sebagai file
+                        formData.append('files[]', blob, 'canvas-drawing.png');
+
+                        // Kirim form langsung ke backend
+                        fetch('upload.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then((data) => {
+                            // console.log(data.message);
+                            // alert(data.message);
+                            window.location.href = window.location.href;
+                        })
+                        .catch(error => console.error('Error:', error));
+                    }, 'image/png');
+                });
+            </script>
+
+            <form action="/pages/produk/ubahDeskripsi.php" method="POST" class="col-5 d-none">
+                <h5 class="">Talking Point</h5>
+                <input type="text" class="d-none" value="<?=$_GET['id'] ?>" name="id">
+                <textarea name="deskripsi" id="" cols="" rows="10" class="form-control border-dark"><?=$deskripsi?></textarea>
+                <div class="d-flex justify-content-end mt-3" style="width:100%">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
+        function isFavorite(idGambar, idProduk) {
+            let judul = document.querySelector("#namaEdit"+idProduk).innerHTML;
+            datas = {
+                idGambar : idGambar,
+                idProduk : idProduk
+            }
+            fetch('/components/tambah-product/is_favorit.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(datas),
+            })
+            .then(response => response.json())
+            .then(datas => {
+                window.location.href = window.location.href;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+        
         function deletePoto(id) {
             let konfirmasi = confirm("Apakah anda yakin ingin menghapus foto ini?");
             if (konfirmasi) {
@@ -191,9 +323,6 @@ if (isset($_SESSION['userId'])) {
                 submitButton.disabled = false; // Re-enable button on error
             });
         });
-
-
-
 
         // Memuat gambar yang telah diunggah sebelumnya (misalnya dari server)
         // function loadPreviousImages() {

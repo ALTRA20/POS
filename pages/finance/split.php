@@ -33,10 +33,6 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 <div class="col-2">
                     <select class="form-select" aria-label="Default select example" name="bank" id="bank" onclick="getBanksTransfer()" onchange="getBanksTransfer()">
                         <option value="bca">BCA</option>
-                        <option value="mandiri">MANDIRI</option>
-                        <option value="bni">BNI</option>
-                        <option value="bsi">BSI</option>
-                        <option value="bri">BRI</option>
                         <option value="split">SPLIT</option>
                     </select>
                 </div>
@@ -96,6 +92,8 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         .then(response => response.text()) // Parse the JSON response
         .then(response => {
             console.log(response);
+            getBanksTransfer();
+            document.querySelector("#btn-close"+id).click();
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -158,7 +156,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 let idtf = data['id'];
                 let kode_bayar = data['kode_bayar'];
                 let keterangan = data['keterangan'];
-                let nominal = data['nominal'];
+                let nominal = (data['duit_in']) ? data['duit_in'] : data['nominal'];
                 let tanggal_transaksi = data['tanggal_transaksi'];
                 if (data['tr']) {
                     kode_bayar = data['tr']['kode_bayar'];
@@ -178,7 +176,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h1 class="modal-title fs-5" id="transferSplit${idtf}Label">${kode_bayar}</h1>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <button type="button" class="btn-close" id="btn-close${idtf}" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="d-flex justify-content-between align-items-center">

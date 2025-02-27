@@ -32,31 +32,7 @@ if(!isset($_SESSION["username"])){
     function format_rupiah($number) {
         return 'Rp ' . number_format($number, 0, ',', '.');
     }
-    include $_SERVER['DOCUMENT_ROOT'].'/components/header/navbar2.php'; 
-    $produks = [
-        "Resleting Amco Gold No 3",
-        "Plisir Spunbond Warna Putih 75gsm Lebar 2,5cm",
-        "Resleting Amco Bronze No 3",
-        "Prada Botega Bronze Metalik per Meter",
-        "Plastik UV Q5 4m x 170mic x 100meter",
-        "Prada Botega Mocasin Metalik per Meter",
-        "Prada Botega Army Metalik per Meter",
-        "Prada Botega Maroon Metalik per Meter",
-    ];
-    $harga = [
-        [
-            "jumlah" => "1",
-            "harga" => "100000"
-        ],
-        [
-            "jumlah" => "3",
-            "harga" => "70000"
-        ],
-        [
-            "jumlah" => "10",
-            "harga" => "50000"
-        ]
-    ];
+    include $_SERVER['DOCUMENT_ROOT'].'/components/header/navbar.php'; 
     ?>
 <script>
     document.title = 'Jelajah GS';

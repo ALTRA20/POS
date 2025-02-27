@@ -14,6 +14,7 @@ $userId = $data['idUser'];
 try {
     $keranjangs = $db->query("SELECT 
         `keranjang`.*,
+        `produk`.`id` AS produk_id,
         `produk`.`nama` AS produk_nama,
         `produk`.`harga_jual`,
         `foto`.`id` AS foto,
@@ -29,6 +30,15 @@ try {
 
     $keranjang_list = [];
     foreach ($keranjangs as $keranjang) {
+        $id = $keranjang['produk_id'];
+        $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$id' AND `is_cover` = 1");
+        if ($foto->num_rows > 0) {
+            $foto = $foto->fetch_assoc()['id'];
+        }else{
+            $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$id' LIMIT 1");
+            $foto = $foto->fetch_assoc()['id'];
+        }
+        $keranjang['foto'] = $foto;
         $keranjang_list[] = $keranjang;
     }
 

@@ -1116,6 +1116,32 @@
         }
         return hargaSatuan;
     }
+
+    function timeAgo(date) {
+        if (typeof date === "string") {
+            date = new Date(date.replace(" ", "T"));
+        }
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+
+        const intervals = {
+            tahun: 31536000,
+            bulan: 2592000,
+            minggu: 604800,
+            hari: 86400,
+            jam: 3600,
+            menit: 60,
+            detik: 1
+        };
+
+        for (let key in intervals) {
+            const interval = Math.floor(seconds / intervals[key]);
+            if (interval >= 1) {
+                return `${interval} ${key} yang lalu`;
+            }
+        }
+        return "just now";
+    }
     
     function makeCard(data) {
         let id = data['id'];
@@ -1247,7 +1273,7 @@
             <div class="col-12" style="z-index:999;margin-top:-1px;">
                 <h5 class="m-0 text-success">${judul}</h5>
                 <h5 class="m-0 text-danger" style='font-size:1em'>${rupiah(harga)} </h5>
-                <p class="text-dark" id="updateHarga">${data['harga_beli_created_at']}</p>
+                <p class="text-dark" id="updateHarga">${timeAgo(data['harga_beli_created_at'])}</p>
             </div>
         </div>`;
 

@@ -168,6 +168,7 @@ WHERE `pesanan`.id = '$id'");
         function format_rupiah($number) {
             return 'Rp ' . number_format($number, 0, ',', '.');
         }
+
         foreach ($pesanans as $key => $pesanan) : 
         $id_pesanan = $pesanan['id'];
         ?>
@@ -179,7 +180,14 @@ WHERE `pesanan`.id = '$id'");
                     </svg>
                 </a>
                 <div class="hr-v bg-dark"></div>
-                <a href="/pages/history/" class="nav-link">History</a>
+                <a href="<?=(isset($_GET['bc'])) ? '/pages/history/' : '/pages/history/' ?>" class="nav-link">History</a>
+                <div class="hr-v bg-dark"></div>
+                <div class="pointer" id="printer" onclick="window.print()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-printer-fill" viewBox="0 0 16 16">
+                    <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1"/>
+                    <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                    </svg>
+                </div>
             </div>
             <div class="bg-light p-3" style='font-size:1em'>
                 <!--<img src="/public/nota/<?=$_GET['d']?>.png" alt="" class="w-100">
@@ -187,8 +195,9 @@ WHERE `pesanan`.id = '$id'");
                 <p class=" m-0 " style='font-size:1em'>Nota: GS<?=$_GET['d']?></p>
 
                 <div class="hr"></div>-->
-                
-                <p class="fw-bold m-0" style="font-size:1em;"><?=$pesanan['customer']?> - <?=$pesanan['alamatCustomer']?> <?=$pesanan['waCustomer']?></p>
+                <?php if (!isset($_GET['bc'])) : ?>
+                    <p class="fw-bold m-0" style="font-size:1em;"><?=$pesanan['customer']?> - <?=$pesanan['alamatCustomer']?> <?=$pesanan['waCustomer']?></p>
+                <?php endif ?>
                 <div class="text-end">
                     <!--<p class=" m-0 "><?=$pesanan['caraBawa']?></p>-->
                     <?php $infoNotaAtas = "GS$_GET[d] $pesanan[usernameUser]";?>
@@ -273,4 +282,7 @@ WHERE `pesanan`.id = '$id'");
         </div>
     <?php endforeach ?>
 </section>
+<script>
+    document.querySelector("#printer").click();
+</script>
 <?php include $_SERVER['DOCUMENT_ROOT'].'/components/footer/index.php'; ?>

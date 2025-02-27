@@ -5,6 +5,44 @@ if(!isset($_SESSION["username"])){
 ?>
 <?php
 $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
+function pesanan() {
+    global $db;
+    global $_GET;
+    global $userId;
+    $dateNow = date("Y-m-d");
+    $pesanans = $db->query("SELECT `pesanan`.*, `customer`.nama, `customer`.alamat, `customer`.wa, `user`.username  
+    FROM `pesanan`
+    JOIN `customer` ON `customer`.id = `pesanan`.`customer_id`
+    JOIN `user` ON `user`.id = `pesanan`.`user_id` WHERE DATE(`pesanan`.created_at) = '$dateNow' ORDER BY `pesanan`.id DESC");
+    $nominalPesananToday = 0;
+    $nominalSudahBayar = 0;
+    $nominalSudahBayarBca = 0;
+    $nominalSudahBayarCash = 0;
+    foreach ($pesanans as $key => $pesanan) {
+        $nominalPesananToday += intval($pesanan['nominal_pesanan']);
+        // var_dump($pesanan['nominal_pesanan']);
+        $id_pesanan = $pesanan['id'];
+        // var_dump($id_pesanan);
+        // echo $pesanan['nominal_pesanan']." | ".$id_pesanan." | "."<br>";
+        $sudahBayars = $db->query("SELECT `nominal`,`kode_bayar` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE bayar.pesanan_id = '$id_pesanan'");
+        foreach ($sudahBayars as $key => $sudahBayar) {
+            if ($sudahBayar['kode_bayar']) {
+                $nominalSudahBayarBca += intval($sudahBayar['nominal']);
+            }else{
+                $nominalSudahBayarCash += intval($sudahBayar['nominal']);
+            }
+            $nominalSudahBayar += intval($sudahBayar['nominal']);
+        }
+    }
+    // var_dump($nominalPesananToday);
+    // var_dump($nominalSudahBayar);
+    return [
+        "nominalPesananToday" => $nominalPesananToday,
+        "nominalSudahBayar" => $nominalSudahBayar,
+        "nominalSudahBayarBca" => $nominalSudahBayarBca,
+        "nominalSudahBayarCash" => $nominalSudahBayarCash
+    ];
+}
 ?>
 <script>
     document.title = 'History GS';
@@ -45,7 +83,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                     $dateToday = date("Y-m-d");
                     ?>
                     <button class="btn btn-warning" onclick="window.location.href = '/pages/history/?date=<?= $dateToday
-                    ?>'">Now</button>
+                    ?>'">Today</button>
                     <button class="btn btn-warning" onclick="window.location.href = '/pages/history/?date=<?= $dateYesterday
                     ?>'">Yesterday</button>
                 </div>
@@ -99,9 +137,10 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         $pesanansAll = $db->query($sql);
         $jumlah_total = $pesanansAll->num_rows;
         echo '<br>Jumlah Data: '.$jumlah_total;
-        if ($pesanans->num_rows > 0) : ?>
-            <?php foreach ($pesanans as $key => $pesanan) :
+        if ($pesanans->num_rows > 0) : 
+            foreach ($pesanans as $key => $pesanan) :
                 $id_pesanan = $pesanan['id'];
+                // var_dump($id_pesanan);
                 $is_markup = 0;
                 ?>
 
@@ -123,8 +162,15 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                         $backgroundColor = 'danger';
                     }else if ($level == 2) {
                         $backgroundColor = 'warning';
+                    }else if ($level == 25) {
+                        $backgroundColor = 'info';
                     }else if ($level == 3) {
                         $backgroundColor = 'light';
+                    }
+
+                    $bcBtn = "bg-danger text-light";
+                    if ($level == 3) {
+                        $bcBtn = "bg-primary text-light";
                     }
                     // var_dump($backgroundColor);
                 ?>
@@ -181,13 +227,13 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                     <div class="mt-2">
                                                         <?php
                                                         $barangs = [];
-                                                        $pesanan_details = $db->query("SELECT `pesanan_detail`.*, `produk`.nama, `produk`.id AS produkId 
+                                                        $pesanan_details = $db->query("SELECT `pesanan_detail`.*, `produk`.nama, `produk`.id AS produkId
                                                         FROM `pesanan_detail`
                                                         LEFT JOIN `produk` ON `produk`.id = `pesanan_detail`.`produk_id`
                                                         WHERE `pesanan_id` = '$id_pesanan'
                                                         ORDER BY 
                                                           CASE 
-                                                            WHEN `pesanan_detail`.`komentar` IS NOT NULL THEN 1 
+                                                           WHEN `pesanan_detail`.`komentar` IS NOT NULL THEN 1 
                                                             ELSE 0 
                                                           END, 
                                                           `pesanan_detail`.`id` ASC");
@@ -213,8 +259,15 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                                 <?php
                                                                 $produkId = $pesanan_detail['produkId'];
                                                                 
-                                                                $foto = $db->query("SELECT `id` FROM `foto` WHERE id_produk = '$produkId' AND is_active = 1 AND is_cover = 1")->fetch_assoc()['id'];
-                                                                
+                                                                $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$produkId' AND `is_cover` = 1");
+                                                                if ($foto->num_rows > 0) {
+                                                                    $foto = $foto->fetch_assoc()['id'];
+                                                                }else{
+                                                                    $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$produkId' LIMIT 1");
+                                                                    $foto = $foto->fetch_assoc()['id'];
+                                                                }
+                                                                $stock['foto'] = $foto;
+                                                                $datas[] = $stock;
                                                                 ?>
                                                                 <img src="<?= ($pesanan_detail['komentar']) ? ($pesanan_detail['foto'] ? '/public/foto/temp/'.$pesanan_detail['foto'] : '/public/foto/md/custom.jpg') : ($foto ? '/public/foto/md/'.$foto.'.jpg' : '/public/404.png') ?>" alt="" class="rounded-circle" style="width:70px; height:70px;">
                                                                 <p class="m-0"><?=($pesanan_detail['nama']) ? $pesanan_detail['nama'] : $pesanan_detail['komentar']?></p>
@@ -258,7 +311,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                         </div>
                                                         <?php endforeach ?>
                                                         <div class="text-end">
-                                                            <input type="text" class="form-control" id="jumlahYangHarusDibayar<?=$pesanan['id']?>" value="<?=$total?>">
+                                                            <input type="text" class="d-none form-control" id="jumlahYangHarusDibayar<?=$pesanan['id']?>" value="<?=$total?>">
                                                             <h3 class=""><?=format_rupiah($total)?></h3>
                                                         </div>
                                                     </div>
@@ -276,12 +329,14 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                                 <?php
                                                                 $nominalBayar = 0;
                                                                 // var_dump("SELECT `nominal` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
-
-                                                                $nominals = $db->query("SELECT `nominal` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
+                                                                if ($level == '25') {
+                                                                    $nominals = $db->query("SELECT `nominal` FROM `tr_duit_masuk_kasir` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk_kasir`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
+                                                                }else{
+                                                                    $nominals = $db->query("SELECT `nominal` FROM `tr_duit_masuk` JOIN `bayar` ON `bayar`.`id` = `tr_duit_masuk`.`bayar_id` WHERE `bayar`.`pesanan_id` = '$id_pesanan'");
+                                                                }
                                                                 foreach ($nominals as $key => $nominal) {
                                                                     $nominalBayar += intval($nominal['nominal']);
                                                                 }
-                                                                
                                                                 foreach ($bayars as $key => $bayar) :
                                                                     // var_dump($bayar);
                                                                     $idBayar = $bayar['IDB'];
@@ -291,7 +346,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                                                     $nominal = $db->query("SELECT * FROM `tr_duit_masuk` WHERE `bayar_id` = '$idBayar'")->fetch_assoc()['nominal'];
                                                                     // Convert the string to a DateTime object
                                                                     $date = new DateTime($bayar['created_at']);
-
+                                                                    $bayarToday += $nominal_bayar;
                                                                 ?>
                                                                 
                                                                     <div class="row alert <?=($nominal) ? 'bg-success text-light' : 'alert-danger text-danger'?> m-0 mb-3">
@@ -415,7 +470,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             </div>
                             <div class="modal fade" id="aproveCash" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                 <div class="modal-dialog">
-                                    <form action="aproveCash.php" method="POST" class="modal-content">
+                                    <form action="/pages/finance/aproveCash.php" method="POST" class="modal-content">
                                         <div class="modal-header">
                                             <h1 class="modal-title fs-5" id="exampleModalLabel">Aprove <span class="m-0" id="namaCash"></span></h1>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -444,7 +499,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             </div>
                         </div>
                         <div class="col-md-1 col-6 mt-2 mt-md-0 d-flex justify-md-content-center">
-                            <button class="btn btn-danger h-fit" data-bs-toggle="modal" data-bs-target="#level<?=$pesanan['id']?>">Level <?=$level?></button>
+                            <button class="btn <?=$bcBtn?> h-fit" data-bs-toggle="modal" data-bs-target="#level<?=$pesanan['id']?>">Level <?=$level?></button>
                         </div>
                         <div class="modal fade" id="level<?=$pesanan['id']?>" tabindex="-1" aria-labelledby="levelLabel" aria-hidden="true">
                             <div class="modal-dialog modal-xl">
@@ -457,36 +512,30 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                         $datas = [
                                             [
                                                 "level" => "Level 1",
-                                                "alur" => "cs cetak nota",
-                                                "informasi" => "nota dicetak oleh cs, lalu diserahkan ke finance untuk di verifikasi",
+                                                "alur" => "CS buat pesanan",
+                                                "informasi" => "nota sudah dibikin belum dicetak, bisa diedit",
+                                                "from" => "CS",
+                                                "to" => "CS"
+                                            ],
+                                            [
+                                                "level" => "Level 2",
+                                                "alur" => "CS claim bayar",
+                                                "informasi" => "nota sudah dicetak, tidak bisa diedit",
                                                 "from" => "CS",
                                                 "to" => "Finance"
                                             ],
                                             [
-                                                "level" => "Level 2",
-                                                "alur" => "finance acc",
-                                                "informasi" => "duit DP sudah diterima oleh finance, nota diserahkan ke stokis / produksi untuk disiapkan barangnya",
-                                                "from" => "Finance",
-                                                "to" => "Stokis / Produksi"
+                                                "level" => "Level 25",
+                                                "alur" => "Kasir claim bayar",
+                                                "informasi" => "sama dg level 2, duit sudah diterima kasir, tetapi belum dikasih ke finance",
+                                                "from" => "Kasir",
+                                                "to" => "Finance"
                                             ],
                                             [
                                                 "level" => "Level 3",
-                                                "alur" => "penetapan biaya + QC",
-                                                "informasi" => "barang sudah ready, nota dan barang diserahkan ke QC + Finance untuk dicek barang dan kelunasan pembayarannya",
-                                                "from" => "Stokis/Produksi",
-                                                "to" => "Finance + QC"
-                                            ],
-                                            [
-                                                "level" => "Level 4",
-                                                "alur" => "Pengiriman / penyerahan barang",
-                                                "informasi" => "Bagian pengiriman melakukan pengiriman / penyerahan kepada konsumen",
-                                                "from" => "QC + Finance",
-                                                "to" => "Admin Cargo"
-                                            ],
-                                            [
-                                                "level" => "Level 5",
-                                                "informasi" => "admin cargo melakukan arsiping nota",
-                                                "from" => "Admin Cargo"
+                                                "alur" => "Finance ACC",
+                                                "informasi" => "Duit sudah di terima oleh finance",
+                                                "from" => "Finance",
                                             ]
                                         ];
                                         foreach ($datas as $key => $data) :
@@ -533,7 +582,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                             <p class="m-0"><?=rupiah($total)?></p>
                             <?php 
                             if ($total - $nominalBayar > 0) : ?>
-                                <p class="m-0"><span class="text-danger">Kurang </span><?=format_rupiah($total - $nominalBayar)?></p>
+                                <p class="btn btn-danger m-0"><span class="">Kurang </span><?=format_rupiah($total - $nominalBayar)?></p>
                             <?php elseif($total - $nominalBayar < 0): ?>
                                 <p class="m-0"><span class="text-success">Lebihan </span><?=format_rupiah($nominalBayar - $total)?></p>
                             <?php endif ?>
@@ -551,7 +600,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                     if ($foto && $foto->num_rows > 0): 
                                         $foto_data = $foto->fetch_assoc();
                                     ?>
-                                        <img src="/public/foto/md/<?= htmlspecialchars($foto_data['id']) ?>.jpg" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
+                                        <a href="/pages/history/produk/?i=<?=$id_produk?>" class=""><img src="/public/foto/md/<?= htmlspecialchars($foto_data['id']) ?>.jpg" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;"></a>
                                     <?php else: ?>
                                         <?php 
                                         $foto = $db->query("SELECT * FROM `foto` WHERE `id_produk` = '$id_produk' ORDER BY `id` DESC LIMIT 1")->fetch_assoc()['id']; 
@@ -561,7 +610,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                                             $foto = "/public/404.png";
                                         }
                                         ?>
-                                        <img src="<?=$foto?>" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
+                                        <a href="/pages/history/produk/?i=<?=$id_produk?>" class=""><img src="<?=$foto?>" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;"></a>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <img src="<?=($barang['foto']) ? '/public/foto/temp/'.$barang['foto'] : '/public/foto/md/custom.jpg'?>" alt="<?=($barang['produk_id']) ? $barang['nama'] : 'custom-produk'?>" id="img-produk" class="rounded-circle <?=($barang['markup'] > 0) ? 'border border-success border-5' : ''?> mx-1" style="width:70px;height:70px;">
@@ -607,7 +656,19 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 }
                 ?>
             </ul>
-
+            <div class="">
+                <?php 
+                    $LK = pesanan(); 
+                    $nominalPesananToday = $LK['nominalPesananToday'];
+                    $nominalSudahBayar = $LK['nominalSudahBayar'];
+                    $nominalSudahBayarBca = $LK['nominalSudahBayarBca'];
+                    $nominalSudahBayarCash = $LK['nominalSudahBayarCash'];
+                ?>
+                <p class="">Level 1-3 today  : <?=rupiah($nominalPesananToday)?></p>
+                <p class="">Level 3 today : <?=rupiah($nominalSudahBayar)?></p>
+                <p class="">BCA Today (verif) : <?=rupiah($nominalSudahBayarBca)?></p>
+                <p class="">Duit Masuk Cash Today : <?=rupiah($nominalSudahBayarCash)?></p>
+            </div>
             <div class="modal fade" id="editProdukFinance" tabindex="-1" aria-labelledby="editProdukFinanceLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content text-dark">
@@ -634,6 +695,14 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
     </section>
 </div>
 <script>
+    function cashCheck(jumlah) {
+        if (jumlah) {
+            document.querySelector("#modal-footer-cash").classList.remove("d-none");
+        } else {
+            document.querySelector("#modal-footer-cash").classList.add("d-none");
+        }
+    }
+
     function choose(elementchoose,idtf,kodeBayar) {
         document.querySelector("#tr_id").value = idtf;
         document.querySelector("#kode_bayar").value = kodeBayar;
@@ -784,6 +853,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             console.error('Error:', error);
         });
     }
+
     function cekInput(id) {
         let jumlah = 0;
         if (document.querySelector("#tanggalBayar"+id).value != '') {
@@ -810,6 +880,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         }
         
     }
+
     function serachCustomer() {
             let input = document.querySelector("#serachCustomer").value;
             const datas = {
@@ -860,7 +931,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 const datas = response.data; // Access the 'data' object
                 let listBayar = '';
                 Object.entries(datas).forEach(([key, value]) => {
-                    console.log(value);
+                    // console.log(value);
                     let duit_masuk = value['duit_masuk'];
                     let bg = (duit_masuk) ? 'bg-success text-light' : 'alert-danger text-danger'
                     let bayarKe = parseInt(key, 10)+1;
@@ -881,6 +952,12 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         .catch((error) => {
             console.error('Error:', error);
         });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gs = urlParams.get('gs');
+    if (gs) {
+        document.querySelector("#btnGS"+gs).click();
     }
 </script>
 <?php include $_SERVER['DOCUMENT_ROOT'].'/components/footer/index.php';?>
