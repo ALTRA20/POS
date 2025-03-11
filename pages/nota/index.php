@@ -179,6 +179,18 @@ WHERE `pesanan`.id = '$id'");
                         <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"/>
                     </svg>
                 </a>
+                <?php if(isset($_GET['bc'])) : ?>
+                <div class="hr-v bg-dark"></div>
+                <a href="/pages/qr/" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-qr-code" viewBox="0 0 16 16">
+                    <path d="M2 2h2v2H2z"/>
+                    <path d="M6 0v6H0V0zM5 1H1v4h4zM4 12H2v2h2z"/>
+                    <path d="M6 10v6H0v-6zm-5 1v4h4v-4zm11-9h2v2h-2z"/>
+                    <path d="M10 0v6h6V0zm5 1v4h-4V1zM8 1V0h1v2H8v2H7V1zm0 5V4h1v2zM6 8V7h1V6h1v2h1V7h5v1h-4v1H7V8zm0 0v1H2V8H1v1H0V7h3v1zm10 1h-1V7h1zm-1 0h-1v2h2v-1h-1zm-4 0h2v1h-1v1h-1zm2 3v-1h-1v1h-1v1H9v1h3v-2zm0 0h3v1h-2v1h-1zm-4-1v1h1v-2H7v1z"/>
+                    <path d="M7 12h1v3h4v1H7zm9 2v2h-3v-1h2v-1z"/>
+                    </svg>
+                </a>
+                <?php endif ?>
                 <div class="hr-v bg-dark"></div>
                 <a href="<?=(isset($_GET['bc'])) ? '/pages/history/' : '/pages/history/' ?>" class="nav-link">History</a>
                 <div class="hr-v bg-dark"></div>
@@ -269,15 +281,22 @@ WHERE `pesanan`.id = '$id'");
                 <div style='text-align:right'>*<br></div>
                 <!--<img src='./hadiah2.png' style='width:80%'>-->
                 <!--<img src='./hadiahe.png' style='width:80%'>-->
-
-<br><i>cek hadiah: 0851-9855-1742</i>
-<div style='text-align:right'>
-*<br>
-*<br>
-*<br>
-*<br>
-*<br>
-</div>
+                <?php if(isset($pesanan['nominal_membayar'])) : ?>
+                    <br>
+                    <p class="p-0 m-0">Nominal uang customer</p>
+                    <b class=""><?=format_rupiah($pesanan['nominal_membayar'])?></b>
+                    <p class="p-0 m-0">Kembalian</p>
+                    <b class=""><?=format_rupiah($pesanan['nominal_membayar'] - $total)?></b>
+                <?php else : ?>
+                    <br><i>cek hadiah: 0851-9855-1742</i>
+                <?php endif ?>
+                <div style='text-align:right'>
+                *<br>
+                *<br>
+                *<br>
+                *<br>
+                *<br>
+                </div>
             </div>
         </div>
     <?php endforeach ?>

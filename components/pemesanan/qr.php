@@ -30,6 +30,10 @@ if (isset($_POST["bayarNow"])) {
     }
     if ($insertBayar) {
         $updateLevel = $db->query("UPDATE `pesanan` SET `level` = '$level' WHERE `id` = '$id'");
+        if (isset($_POST["nominalHarusDibayar"])) {
+            $membayar = $_POST["nominalBayar"];
+            $update_nominal_membayar = $db->query("UPDATE `pesanan` SET `nominal_membayar` = '$membayar' WHERE `id` = '$id'");
+        }
         if ($isQuick == 1) {
             $bayar_id = $db->query("SELECT `id` FROM `bayar` WHERE `pesanan_id` = '$id'")->fetch_assoc()['id'];
             $insertDuitMasuk = $db->query("INSERT INTO `duit_masuk`(`kode_bayar`, `user_id`, `nominal`, `bayar_id`, `created_at`) VALUES (null,'$userId','$nominalBayar','$bayar_id',CURRENT_TIMESTAMP())");

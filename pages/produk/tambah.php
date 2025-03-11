@@ -22,6 +22,10 @@
                             <label for="hargaBarang" class="">Harga</label>
                             <input autocomplete="off" type="text" class="form-control border border-dark mb-4" id="hargaBarang" value="0">
                         </div>
+                        <div class="mb-4">
+                            <label for="idBarcode" class="fw-bold">ID Barcode</label>
+                            <input type="text" class="form-control border border-dark text-dark mb-4" id="idBarcode" autocomplete="off">
+                        </div>
                     </div>
                 </div>
                 <div class="w-100 d-flex justify-content-end mt-3 d-none">
@@ -36,20 +40,16 @@
                     </button>
                     </h2>
                     <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#detail1">
-                    <div class="accordion-body">
-                        <div class="">
-                            <label for="hargaBeli" class="fw-bold">Harga Beli</label>
-                            <input autocomplete="off" type="text" class="form-control border border-dark mb-4" id="hargaBeli" value="0">
-                        </div>
-                        <div class="mb-4">
-                            <label for="talkingPoint" class="fw-bold">Talking Point</label>
-                            <textarea name="" id="talkingPoint" cols="" rows="15" class="w-100 form-control border-dark"></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label for="idBarcode" class="fw-bold">ID Barcode</label>
-                            <input type="text" class="form-control border border-dark text-dark mb-4" id="idBarcode" autocomplete="off">
-                        </div>
-                    </div>
+                        <div class="accordion`-body">
+                            <div class="">
+                                <label for="hargaBeli" class="fw-bold">Harga Beli</label>
+                                <input autocomplete="off" type="text" class="form-control border border-dark mb-4" id="hargaBeli" value="0">
+                            </div>
+                            <div class="mb-4">
+                                <label for="talkingPoint" class="fw-bold">Talking Point</label>
+                                <textarea name="" id="talkingPoint" cols="" rows="15" class="w-100 form-control border-dark"></textarea>
+                            </div>
+                        </di`v>
                     </div>
                 </div>
             </div>

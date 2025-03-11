@@ -102,9 +102,6 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             </div>
             <div class="" id="cart-produk-custom" style="background: #206320;padding:15px">
             </div>
-            <div class="d-none d-md-flex" role="search">
-                <input onclick='this.select();' style='background-color: white !important;color:green !important' autocomplete="off" class="form-control me-2 text-light rounded-end" id="search" type="search" placeholder="Search" aria-label="Search" style='background-color:white' autofocus/>
-            </div>
         </div>
         <div class="w-100 d-flex justify-content-center" style="height: 7%;">
             <div class="modal fade" id="addCustomBarang" tabindex="-1" aria-labelledby="addCustomBarangLabel" aria-hidden="true">
@@ -176,6 +173,9 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         </div>
     </div>
     <section style="width:65%;">
+        <div class="d-none d-md-flex align-items-center px-5 bg-danger" role="search" style="height:50px;">
+            <input onclick='this.select();' style='height:fit-content; color:green !important' autocomplete="off" class="form-control me-2 bg-warning text-light rounded-end" id="search" type="search" placeholder="Search" aria-label="Search" style='background-color:white' autofocuss/>
+        </div>
         <div class="d-flex justify-content-center flex-wrap gap-2 bg-light py-4 h-90 overflow-auto" id="overlay"></div>
         <div class="w-100 d-flex justify-content-center gap-2 bg-light px-5 py-3" id="pages">
         </div>
@@ -189,12 +189,17 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
 <script>
     document.querySelectorAll('input[type="search"]').forEach(element => {
         element.addEventListener('input', function () {
-            sendData(<?=$userId?>,1,this.value);
+            sendData(<?=$userId?>, 1, this.value); // Pencarian real-time
         });
-        element.addEventListener('change', function () {
-            sendData(<?=$userId?>,1,this.value);
+
+        element.addEventListener('keydown', function (event) {
+            if (event.key === "Enter") { 
+                event.preventDefault(); // Hindari submit form jika ada
+                sendData(<?=$userId?>, 1, this.value, enter=true); // Kirim data saat Enter ditekan
+            }
         });
     });
+
     function tambahJual(edit) {
         let id = "#hargaJual";
         let borderColor = "border-dark";
@@ -755,7 +760,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         .catch((error) => {
             console.error('Error:', error);
         });
-        // document.querySelector("#btn-close-request"+id).click();
+        document.querySelector("#btn-close-request"+id).click();
     }
 
     function commitCart() {
@@ -998,7 +1003,7 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
         return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
 
-    function sendData(userId,page,search) {
+    function sendData(userId,page,search,enter=false) {
         // Get data from input or any other source
         var dataToSend = { 
             search: search,
@@ -1025,8 +1030,8 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
                 </div>`;
                 document.querySelector('#overlay').innerHTML = buttonCus;
             }else{
-                console.log(datas['datas']);
-                if (!isNaN(document.querySelector("#search").value) && document.querySelector("#search").value !== "") {
+                // console.log(document.querySelector("#search").value);
+                if (enter) {
                   if (datas['datas'].length == 1) {
                     submit(datas['datas'][0]['id'],<?=$userId?>);
                     document.querySelector("#search").value = '';
@@ -1237,14 +1242,14 @@ $_SESSION['last_url'] = $_SERVER[REQUEST_URI];
             <h5 class="w-fit position-absolute text-dark p-3 fw-bold" style="top:0; right:0;">#${id}</h5>
             <div class="col-8 position-relative">
                 <img src="${gambar}" alt="" class="w-100 h-100 p-0 m-0">
-                <?php if($jabatan == 'super-admin' || $jabatan == 'cs') : ?>
+                <?php //if($jabatan == 'super-admin' || $jabatan == 'cs') : ?>
                     ${(harga != 0 ? `<div class="w-fit p-3 border border-3 border-primary rounded-circle pointer bg-light position-absolute bottom-0 end-0 keranjangIcon" data-bs-toggle="modal" data-bs-target="#exampleModal${id}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-cart-plus text-primary" viewBox="0 0 16 16">
                             <path d="M9 5.5a.5.5 0 0 0-1 0V7H6.5a.5.5 0 0 0 0 1H8v1.5a.5.5 0 0 0 1 0V8h1.5a.5.5 0 0 0 0-1H9z"/>
                             <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1zm3.915 10L3.102 4h10.796l-1.313 7zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
                         </svg>  
                     </div>` : '')}
-                <?php endif ?>
+                <?php //endif ?>
             </div>
             <div class="col-4 d-flex flex-column justify-content-center align-items-center">
                 <div class="w-fit px-3 py-2 ${bgStock}" style="">
